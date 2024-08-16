@@ -3,6 +3,8 @@ import numpy as np
 import joblib
 import pandas as pd
 import matplotlib.pyplot as plt
+import sklearn 
+import lightgbm as lgb 
 
 # Set page configuration
 st.set_page_config(
