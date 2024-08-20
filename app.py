@@ -18,11 +18,3 @@ def home():
 
 # Display the home page
 home()
-
-
-
-
-    
-
-
-
