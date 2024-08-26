@@ -1,87 +1,89 @@
 import streamlit as st
+import hashlib
+import json
+import os
 
-# Initialize the USER_CREDENTIALS in session state if it doesn't exist
-if 'USER_CREDENTIALS' not in st.session_state:
-    st.session_state.USER_CREDENTIALS = {
-        "user1": "password1",
-        "user2": "password2",
-    }
+# Function to hash passwords
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
-# Function to authenticate the user
-def authenticate(username, password):
-    username = username.lower()  # Ensure the username is in lowercase
-    if username in st.session_state.USER_CREDENTIALS and st.session_state.USER_CREDENTIALS[username] == password:
-        return True
-    return False
+# Function to load user data
+def load_user_data():
+    if os.path.exists('users.json'):
+        with open('users.json', 'r') as f:
+            return json.load(f)
+    return {"users": []}
 
-# Function to create a new account
-def create_account(username, password):
-    username = username.lower()  # Ensure the username is stored in lowercase
-    if username in st.session_state.USER_CREDENTIALS:
-        return False  # Username already exists
-    st.session_state.USER_CREDENTIALS[username] = password
+# Function to save user data
+def save_user_data(user_data):
+    with open('users.json', 'w') as f:
+        json.dump(user_data, f)
+
+# Function to create a new user
+def create_user(username, password):
+    user_data = load_user_data()
+    for user in user_data["users"]:
+        if user["username"] == username:
+            st.warning("Username already exists.")
+            return False
+    hashed_password = hash_password(password)
+    user_data["users"].append({"username": username, "password": hashed_password})
+    save_user_data(user_data)
+    st.success("Account created successfully.")
     return True
 
-# Display the create account button at the top right corner
-st.markdown(
-    """
-    <style>
-    .top-right-button {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 10px 20px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Function to authenticate user
+def authenticate_user(username, password):
+    user_data = load_user_data()
+    hashed_password = hash_password(password)
+    for user in user_data["users"]:
+        if user["username"] == username and user["password"] == hashed_password:
+            return True
+    return False
 
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
+# Main application
+def main():
+    st.title("Authentication Example")
 
-# Create account button
-if st.button("Create Account", key="create_account", help="Create a new account", use_container_width=True):
-    st.session_state.show_create_account = True
+    menu = ["Home", "Login", "SignUp"]
+    choice = st.sidebar.selectbox("Menu", menu)
 
-if not st.session_state.authenticated:
-    st.title("Login")
+    if choice == "Home":
+        st.subheader("Home")
+        st.write("Welcome to the app!")
+    elif choice == "Login":
+        st.subheader("Login")
 
-    username = st.text_input("Username").lower()  # Ensure the username input is lowercase
-    password = st.text_input("Password", type="password")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        if st.button("Login"):
+            if authenticate_user(username, password):
+                st.success(f"Welcome {username}")
+                st.session_state["logged_in"] = True
+                st.session_state["username"] = username
+            else:
+                st.error("Invalid credentials")
 
-    if st.button("Login"):
-        if authenticate(username, password):
-            st.session_state.authenticated = True
-            st.success("Login successful!")
-            st.experimental_set_query_params(rerun="true")
-        else:
-            st.error("Invalid username or password")
+        if "logged_in" in st.session_state and st.session_state["logged_in"]:
+            if st.button("Logout"):
+                st.session_state["logged_in"] = False
+                st.session_state["username"] = None
+                st.success("You have logged out.")
 
-    # Check if the user has clicked on the create account button
-    if st.session_state.get("show_create_account"):
-        with st.form("create_account_form", clear_on_submit=True):
-            st.write("Create a New Account")
-            new_username = st.text_input("New Username").lower()  # Force lowercase for new usernames
-            new_password = st.text_input("New Password", type="password")
+    elif choice == "SignUp":
+        st.subheader("Create Account")
 
-            create_account_button = st.form_submit_button("Create Account")
-            if create_account_button:
-                if new_username in st.session_state.USER_CREDENTIALS:
-                    st.error("Username already exists. Please choose a different username.")
-                else:
-                    if create_account(new_username, new_password):
-                        st.success("Account created successfully! You can now log in.")
-                        st.session_state.show_create_account = False  # Close the popup after creation
-                        st.experimental_set_query_params(rerun="true")
-                    else:
-                        st.error("Account creation failed.")
-else:
-    # Once authenticated, show a welcome message
-    st.write("Welcome to the app!")
-    
-    # Option to log out
-    if st.button("Logout"):
-        st.session_state.authenticated = False
-        st.experimental_set_query_params(rerun="true")
+        new_user = st.text_input("Username")
+        new_password = st.text_input("Password", type="password")
 
+        if st.button("SignUp"):
+            create_user(new_user, new_password)
+
+    # Access control: Restrict access to authenticated users only
+    if "logged_in" in st.session_state and st.session_state["logged_in"]:
+        st.write(f"Hello, {st.session_state['username']}! You are logged in.")
+    else:
+        st.warning("Please log in to access this page.")
+
+if __name__ == '__main__':
+    main()
