@@ -43,7 +43,7 @@ def authenticate_user(username, password):
 
 # Main application
 def main():
-    st.title("Authentication Example")
+    st.title("Authentication")
 
     menu = ["Home", "Login", "SignUp"]
     choice = st.sidebar.selectbox("Menu", menu)
