@@ -1,3 +1,8 @@
 {
-    "users": []
+    "users": [
+        {
+            "username": "clement",
+            "password": "3536326f5d9943a8576d1f0aad092daede35d7e9eab945884c8a942f2de9e7f4"
+        }
+    ]
 }
