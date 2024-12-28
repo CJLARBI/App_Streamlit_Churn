@@ -8,9 +8,25 @@ st.set_page_config(
     layout="wide",
 )
 
-# Display history if available
-st.header("Prediction History")
-if 'history' in st.session_state and not st.session_state.history.empty:
-    st.write(st.session_state.history)
+# Page title
+st.title("🕰️ Prediction History")
+
+# Display history
+history = st.session_state.get('history', pd.DataFrame())
+
+if not history.empty:
+    st.dataframe(
+        history,
+        use_container_width=True,
+        height=400,
+        column_config={
+            "Date": "Date",
+            "Time": "Time",
+            "Prediction": "Prediction",
+            "Model": "Model",
+            "Probability": "Confidence",
+            "Interpretation": "Details",
+        },
+    )
 else:
     st.write("No predictions have been made yet.")
